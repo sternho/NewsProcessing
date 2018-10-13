@@ -11,7 +11,6 @@ public class ExportController {
 	@RequestMapping("/export_csv")
 	public String toPage() throws IOException {
 		return "export_csv";
-//		response.sendRedirect("export_csv");
 	}
 
 }

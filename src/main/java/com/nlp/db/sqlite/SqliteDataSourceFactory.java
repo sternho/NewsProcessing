@@ -69,7 +69,25 @@ public class SqliteDataSourceFactory extends DatabaseFactory {
 
 	// formatter
 
-	private static DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+	private static DateFormat DATETIME_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+	private static DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
+
+	public static String datetimeFormatter(Date value) {
+		if (value != null)
+			return DATETIME_FORMAT.format(value);
+		else
+			return null;
+	}
+	public static Date datetimeFormatter(String value) {
+		if (value != null) {
+			try {
+				return DATETIME_FORMAT.parse(value);
+			} catch (ParseException e) {
+				logger.error(e.toString());
+			}
+		}
+		return null;
+	}
 
 	public static String dateFormatter(Date value) {
 		if (value != null)
@@ -77,7 +95,6 @@ public class SqliteDataSourceFactory extends DatabaseFactory {
 		else
 			return null;
 	}
-
 	public static Date dateFormatter(String value) {
 		if (value != null) {
 			try {

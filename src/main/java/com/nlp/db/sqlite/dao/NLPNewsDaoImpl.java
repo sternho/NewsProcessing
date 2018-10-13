@@ -6,6 +6,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.nlp.db.DatabaseFactory;
 import com.nlp.db.dao.NLPNewsDao;
@@ -38,7 +40,7 @@ public class NLPNewsDaoImpl implements NLPNewsDao {
 		pstmt.setString(5, news.getDirect());
 		pstmt.setString(6, SqliteDataSourceFactory.booleanFormatter(news.getProcessed()));
 //		pstmt.setString(7, SqliteDataSourceFactory.dateFormatter(news.getCreateDt()));
-		pstmt.setString(7, SqliteDataSourceFactory.dateFormatter(new Date()));
+		pstmt.setString(7, SqliteDataSourceFactory.datetimeFormatter(new Date()));
 		pstmt.executeUpdate();
 	}
 
@@ -76,7 +78,7 @@ public class NLPNewsDaoImpl implements NLPNewsDao {
 //			Boolean direct = SqliteDataSourceFactory.booleanFormatter(rs.getString("DIRECT"));
 			String direct = rs.getString("DIRECT");
 			Boolean processed = SqliteDataSourceFactory.booleanFormatter(rs.getString("PROCESSED"));
-			Date createDt = SqliteDataSourceFactory.dateFormatter(rs.getString("CREATE_DT"));
+			Date createDt = SqliteDataSourceFactory.datetimeFormatter(rs.getString("CREATE_DT"));
 
 			NLPNews news = new NLPNews();
 			news.setSource(source);
@@ -110,7 +112,7 @@ public class NLPNewsDaoImpl implements NLPNewsDao {
 //			Boolean direct = SqliteDataSourceFactory.booleanFormatter(rs.getString("direct"));
 			String direct = rs.getString("DIRECT");
 			Boolean processed = SqliteDataSourceFactory.booleanFormatter(rs.getString("processed"));
-			Date createDt = SqliteDataSourceFactory.dateFormatter(rs.getString("CREATE_DT"));
+			Date createDt = SqliteDataSourceFactory.datetimeFormatter(rs.getString("CREATE_DT"));
 
 			NLPNews news = new NLPNews();
 			news.setSource(source);
@@ -145,7 +147,7 @@ public class NLPNewsDaoImpl implements NLPNewsDao {
 //			Boolean direct = SqliteDataSourceFactory.booleanFormatter(rs.getString("direct"));
 			String direct = rs.getString("DIRECT");
 			Boolean processed = SqliteDataSourceFactory.booleanFormatter(rs.getString("processed"));
-			Date createDt = SqliteDataSourceFactory.dateFormatter(rs.getString("CREATE_DT"));
+			Date createDt = SqliteDataSourceFactory.datetimeFormatter(rs.getString("CREATE_DT"));
 			
 			NLPNews news = new NLPNews();
 			news.setSource(source);
@@ -172,8 +174,8 @@ public class NLPNewsDaoImpl implements NLPNewsDao {
 		ArrayList<NLPNews> returns = new ArrayList<NLPNews>();
 		
 		PreparedStatement pstmt = datasource.getStatement(sql);
-		pstmt.setString(1, SqliteDataSourceFactory.dateFormatter(date));
-		pstmt.setString(2, SqliteDataSourceFactory.dateFormatter(SqliteDataSourceFactory.addDays(date, 1)));
+		pstmt.setString(1, SqliteDataSourceFactory.datetimeFormatter(date));
+		pstmt.setString(2, SqliteDataSourceFactory.datetimeFormatter(SqliteDataSourceFactory.addDays(date, 1)));
 		ResultSet rs = pstmt.executeQuery();
 
 		while (rs.next()) {
@@ -183,7 +185,7 @@ public class NLPNewsDaoImpl implements NLPNewsDao {
 			String content = rs.getString("content");
 			String direct = rs.getString("DIRECT");
 			Boolean processed = SqliteDataSourceFactory.booleanFormatter(rs.getString("processed"));
-			Date createDt = SqliteDataSourceFactory.dateFormatter(rs.getString("CREATE_DT"));
+			Date createDt = SqliteDataSourceFactory.datetimeFormatter(rs.getString("CREATE_DT"));
 
 			NLPNews news = new NLPNews();
 			news.setSource(source);
@@ -197,6 +199,83 @@ public class NLPNewsDaoImpl implements NLPNewsDao {
 			returns.add(news);
 		}
 
+		return returns;
+	}
+
+	@Override
+	public ArrayList<NLPNews> selectContentBykeyWords(String[] ids) throws SQLException {
+		SqliteDataSourceFactory datasource = (SqliteDataSourceFactory) DatabaseFactory.getInstance();
+
+		String sql = "SELECT SOURCE, CATEGORY, ID, CONTENT, DIRECT, PROCESSED, CREATE_DT FROM NLP_NEWS WHERE CONTENT IN(";
+		for(int i=0; i<ids.length; i++) {
+			if(i!=0)
+				sql += ", ";
+			sql += "?";
+		}
+		sql += ")";
+		
+		PreparedStatement pstmt = datasource.getStatement(sql);
+		for(int i=0; i<ids.length; i++)
+			pstmt.setString(i+1, ids[i]);
+		
+		ArrayList<NLPNews> returns = new ArrayList<NLPNews>();
+
+		Statement stmt = datasource.getStatement();
+		ResultSet rs = stmt.executeQuery(sql);
+
+		while (rs.next()) {
+			String source = rs.getString("SOURCE");
+			String category = rs.getString("CATEGORY");
+			String id = rs.getString("ID");
+			String content = rs.getString("CONTENT");
+			String direct = rs.getString("DIRECT");
+			Boolean processed = SqliteDataSourceFactory.booleanFormatter(rs.getString("PROCESSED"));
+			Date createDt = SqliteDataSourceFactory.datetimeFormatter(rs.getString("CREATE_DT"));
+
+			NLPNews news = new NLPNews();
+			news.setSource(source);
+			news.setCategory(category);
+			news.setId(id);
+			news.setContent(content);
+			news.setDirect(direct);
+			news.setProcessed(processed);
+			news.setCreateDt(createDt);
+
+			returns.add(news);
+		}
+
+		return returns;
+	}
+
+	@Override
+	public Map<Date, String[]> selectContentBykeyWordsGrpByDate(String[] ids) throws SQLException {
+		SqliteDataSourceFactory datasource = (SqliteDataSourceFactory) DatabaseFactory.getInstance();
+
+		String sql = "SELECT DIRECT, count(*) as COUNT, date(CREATE_DT) as DATE FROM NLP_NEWS WHERE CONTENT IN(";
+		for(int i=0; i<ids.length; i++) {
+			if(i!=0)
+				sql += ", ";
+			sql += "?";
+		}
+		sql += ") AND PROCESSED='Y' group by DATE ";
+		
+		PreparedStatement pstmt = datasource.getStatement(sql);
+		for(int i=0; i<ids.length; i++)
+			pstmt.setString(i+1, ids[i]);
+		
+		Map<Date, String[]> returns = new HashMap<Date, String[]>();
+
+		Statement stmt = datasource.getStatement();
+		ResultSet rs = stmt.executeQuery(sql);
+
+		while (rs.next()) {
+			String direct = rs.getString("DIRECT");
+			String count = rs.getString("COUNT");
+			Date createDt = SqliteDataSourceFactory.dateFormatter(rs.getString("DATE"));
+			
+			returns.put(createDt, new String[]{direct, count});
+		}
+		
 		return returns;
 	}
 

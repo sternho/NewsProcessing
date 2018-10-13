@@ -10,6 +10,10 @@ public class NLPNews {
 //		FT //Financial Times
 //	}
 	
+	public enum RESULT {
+		VERY_NEGATIVE, NEGATIVE, NEUTRAL, POSITIVE, VERY_POSITIVE
+	}
+	
 	@CsvBindByName
 	private String source;
 	@CsvBindByName
