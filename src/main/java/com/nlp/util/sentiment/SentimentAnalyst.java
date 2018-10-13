@@ -25,6 +25,7 @@ public class SentimentAnalyst {
 	private SentimentAnalyst() {
 		Properties props = new Properties();
 	    props.setProperty("annotators", "tokenize, ssplit, pos, lemma, ner, parse, dcoref, sentiment");
+	    props.setProperty("ner.useSUTime", "false");
 	    
 	    pipeline = new StanfordCoreNLP(props);
 	}
